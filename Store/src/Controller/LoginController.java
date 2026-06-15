@@ -2,6 +2,7 @@ package Controller;
 
 import DAO.AppPaths;
 import DAO.PasswordManager;
+import Util.InputValidator;
 import View.LoginView;
 import View.AdminDashboardView;
 import View.CashierDashboardView;
@@ -52,9 +53,29 @@ public class LoginController {
         String phoneNumber = view.getPhoneNumber();
         String selectedRole = view.getSelectedRole();
 
-        // Check if any of the fields are empty
-        if (username.isEmpty() || password.isEmpty() || email.isEmpty() || phoneNumber.isEmpty() || selectedRole == null) {
-            showAlert("Missing Information", "Please fill in all fields.");
+        // Validate all input fields
+        if (!InputValidator.isValidUsername(username)) {
+            showAlert("Invalid Username", InputValidator.getValidationErrorMessage("Username", "username"));
+            return;
+        }
+        
+        if (!InputValidator.isValidPassword(password)) {
+            showAlert("Invalid Password", InputValidator.getValidationErrorMessage("Password", "password"));
+            return;
+        }
+        
+        if (!InputValidator.isValidEmail(email)) {
+            showAlert("Invalid Email", InputValidator.getValidationErrorMessage("Email", "email"));
+            return;
+        }
+        
+        if (!InputValidator.isValidPhoneNumber(phoneNumber)) {
+            showAlert("Invalid Phone Number", InputValidator.getValidationErrorMessage("Phone Number", "phone"));
+            return;
+        }
+        
+        if (selectedRole == null || selectedRole.isBlank()) {
+            showAlert("Missing Role", "Please select a role.");
             return;
         }
 

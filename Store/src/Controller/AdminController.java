@@ -2,6 +2,7 @@ package Controller;
 
 import DAO.AppPaths;
 import DAO.PasswordManager;
+import Util.InputValidator;
 import Model.Role;
 import Model.User;
 
@@ -152,13 +153,21 @@ public class AdminController {
     }
 
     private void validateEmployee(String username, String password, String email, String phoneNumber, Role role) {
-        if (isBlank(username) || isBlank(password) || isBlank(email) || isBlank(phoneNumber) || role == null) {
-            throw new IllegalArgumentException("Username, password, email, phone number, and role are required.");
+        if (!InputValidator.isValidUsername(username)) {
+            throw new IllegalArgumentException(InputValidator.getValidationErrorMessage("Username", "username"));
         }
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
+        if (!InputValidator.isValidPassword(password)) {
+            throw new IllegalArgumentException(InputValidator.getValidationErrorMessage("Password", "password"));
+        }
+        if (!InputValidator.isValidEmail(email)) {
+            throw new IllegalArgumentException(InputValidator.getValidationErrorMessage("Email", "email"));
+        }
+        if (!InputValidator.isValidPhoneNumber(phoneNumber)) {
+            throw new IllegalArgumentException(InputValidator.getValidationErrorMessage("Phone Number", "phone"));
+        }
+        if (role == null) {
+            throw new IllegalArgumentException("Role is required.");
+        }
     }
 
     private Role parseRole(String role) {
