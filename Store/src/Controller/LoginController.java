@@ -3,6 +3,7 @@ package Controller;
 import DAO.AppPaths;
 import DAO.PasswordManager;
 import Util.InputValidator;
+import Util.SharedContext;
 import View.LoginView;
 import View.AdminDashboardView;
 import View.CashierDashboardView;
@@ -80,8 +81,8 @@ public class LoginController {
         }
 
         boolean validLogin = false;
-        Manager manager = null;
-        Cashier cashier = null;
+        String loggedInUsername = null;
+        String loggedInRole = null;
 
         // Check credentials based on the selected role
         for (String[] user : credentials) {
@@ -99,17 +100,8 @@ public class LoginController {
                 
                 if (passwordMatches) {
                     validLogin = true;
-                    if (selectedRole.equals("Manager")) {
-                        manager = new Manager(username, password, user[2], user[3], phoneNumber);
-                    } else if (selectedRole.equals("Cashier")) {
-                        // Initialize inventory for the cashier using the manager's inventory
-                        if (manager == null) {
-                            manager = new Manager("defaultUser", "defaultPass", "Default Manager", "default@example.com", "123456789");
-                            System.out.println("Manager was null, initialized with default values.");
-                        }
-                        Inventory sharedInventory = manager.getInventory(); // Use the shared manager inventory
-                        cashier = new Cashier(username, password, user[2], user[3], phoneNumber, "Electronics", sharedInventory);
-                    }
+                    loggedInUsername = username;
+                    loggedInRole = selectedRole;
                     break;
                 }
             }
@@ -117,20 +109,26 @@ public class LoginController {
 
         if (validLogin) {
             isLoggedIn = true;
-            updateViewStatus(selectedRole + " " + username + " logged in.");
+            
+            // Initialize shared context with current user
+            SharedContext context = SharedContext.getInstance();
+            context.setCurrentUsername(loggedInUsername);
+            context.setCurrentUserRole(loggedInRole);
+            
+            updateViewStatus(loggedInRole + " " + loggedInUsername + " logged in.");
 
             // Open appropriate dashboard based on role
-            if (selectedRole.equals("Admin")) {
+            if (loggedInRole.equals("Admin")) {
                 openAdminDashboard();
-            } else if (selectedRole.equals("Manager") && manager != null) {
+            } else if (loggedInRole.equals("Manager")) {
+                Manager manager = new Manager(loggedInUsername, password, email, phoneNumber, phoneNumber);
                 ManagerController managerController = new ManagerController(manager);
                 openManagerDashboard(managerController);
-            } else if (selectedRole.equals("Cashier") && cashier != null) {
-                if (manager == null) {
-                    manager = new Manager("defaultUser", "defaultPass", "Default Manager", "default@example.com", "123456789");
-                    System.out.println("Manager was null, initialized with default values.");
-                }
-                Inventory sharedInventory = manager.getInventory(); // Use the shared manager inventory
+            } else if (loggedInRole.equals("Cashier")) {
+                // Cashier uses shared inventory from context
+                Inventory sharedInventory = context.getInventory();
+                Manager manager = new Manager("system", "internal", "System Manager", "system@store.local", "0000000000");
+                Cashier cashier = new Cashier(loggedInUsername, password, email, phoneNumber, "Electronics", sharedInventory);
                 CashierController cashierController = new CashierController(cashier, sharedInventory);
                 openCashierDashboard(cashierController);
             }
