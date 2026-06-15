@@ -1,0 +1,27 @@
+# Credentials and Sensitive Data
+Store/src/DAO/passwords.txt
+Store/bin/DAO/passwords.txt
+
+# Compiled Java files
+*.class
+Store/bin/
+
+# IDE
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+Store/.project
+Store/.classpath
+
+# Local data files (if generated)
+Store/src/Database/
+Store/src/DAO/*.dat
