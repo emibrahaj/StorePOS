@@ -1,6 +1,7 @@
 package Controller;
 
 import DAO.AppPaths;
+import DAO.PasswordManager;
 import View.LoginView;
 import View.AdminDashboardView;
 import View.CashierDashboardView;
@@ -63,21 +64,33 @@ public class LoginController {
 
         // Check credentials based on the selected role
         for (String[] user : credentials) {
-            if (selectedRole.equals(user[4]) && username.equals(user[0]) && password.equals(user[1])
-                    && email.equals(user[2]) && phoneNumber.equals(user[3])) {
-                validLogin = true;
-                if (selectedRole.equals("Manager")) {
-                    manager = new Manager(username, password, user[2], user[3], phoneNumber);
-                } else if (selectedRole.equals("Cashier")) {
-                    // Initialize inventory for the cashier using the manager's inventory
-                    if (manager == null) {
-                        manager = new Manager("defaultUser", "defaultPass", "Default Manager", "default@example.com", "123456789");
-                        System.out.println("Manager was null, initialized with default values.");
-                    }
-                    Inventory sharedInventory = manager.getInventory(); // Use the shared manager inventory
-                    cashier = new Cashier(username, password, user[2], user[3], phoneNumber, "Electronics", sharedInventory);
+            if (selectedRole.equals(user[4]) && username.equals(user[0]) && email.equals(user[2]) 
+                    && phoneNumber.equals(user[3])) {
+                // Verify password using PasswordManager (supports both hashed and plaintext for backward compatibility)
+                boolean passwordMatches = false;
+                try {
+                    // Try hashed password verification first
+                    passwordMatches = PasswordManager.verifyPassword(password, user[1]);
+                } catch (Exception e) {
+                    // Fallback to plaintext comparison for backward compatibility
+                    passwordMatches = password.equals(user[1]);
                 }
-                break;
+                
+                if (passwordMatches) {
+                    validLogin = true;
+                    if (selectedRole.equals("Manager")) {
+                        manager = new Manager(username, password, user[2], user[3], phoneNumber);
+                    } else if (selectedRole.equals("Cashier")) {
+                        // Initialize inventory for the cashier using the manager's inventory
+                        if (manager == null) {
+                            manager = new Manager("defaultUser", "defaultPass", "Default Manager", "default@example.com", "123456789");
+                            System.out.println("Manager was null, initialized with default values.");
+                        }
+                        Inventory sharedInventory = manager.getInventory(); // Use the shared manager inventory
+                        cashier = new Cashier(username, password, user[2], user[3], phoneNumber, "Electronics", sharedInventory);
+                    }
+                    break;
+                }
             }
         }
 

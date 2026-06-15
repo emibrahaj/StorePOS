@@ -1,6 +1,7 @@
 package Controller;
 
 import DAO.AppPaths;
+import DAO.PasswordManager;
 import Model.Role;
 import Model.User;
 
@@ -34,7 +35,15 @@ public class AdminController {
             throw new IllegalArgumentException("An employee with this username already exists.");
         }
 
-        employees.add(new EmployeeRecord(username, password, name, email, phoneNumber, role, accessLevel));
+        // Hash password before storing
+        String hashedPassword;
+        try {
+            hashedPassword = PasswordManager.hashPassword(password);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to hash password: " + e.getMessage(), e);
+        }
+
+        employees.add(new EmployeeRecord(username, hashedPassword, name, email, phoneNumber, role, accessLevel));
         saveEmployees();
     }
 
