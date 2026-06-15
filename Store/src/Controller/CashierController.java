@@ -54,6 +54,10 @@ public class CashierController {
         cashier.printBills();
     }
 
+    public boolean returnItemFromBill(String billNumber, String itemName, int quantity) {
+        return cashier.processReturn(billNumber, itemName, quantity);
+    }
+
     public double getTotalAmount() {
         return cashier.getCurrentBill() != null ? cashier.getCurrentBill().getTotalAmount() : 0;
     }

@@ -39,7 +39,6 @@ public class AppNavigator {
         Logger.info("AppNavigator", "Navigating to Login screen");
         try {
             LoginView loginView = new LoginView();
-            LoginController loginController = new LoginController(loginView);
             loginView.setNavigator(this);
             loginView.display(primaryStage);
         } catch (Exception e) {

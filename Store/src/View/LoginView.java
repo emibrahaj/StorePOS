@@ -1,14 +1,13 @@
 package View;
 
 import Controller.LoginController;
-import javafx.application.Application;
+import Util.AppNavigator;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import javafx.scene.control.ComboBox;
 
-public class LoginView extends Application {
+public class LoginView {
 
     private TextField usernameField;
     private PasswordField passwordField;
@@ -19,8 +18,9 @@ public class LoginView extends Application {
     private ComboBox<String> roleComboBox; // ComboBox for user roles
 
     private LoginController controller;
+    private AppNavigator navigator;
+    private Stage primaryStage;
 
-    @Override
     public void start(Stage primaryStage) {
     
         // Username field
@@ -68,7 +68,11 @@ public class LoginView extends Application {
         		emailField, phoneField,loginButton );
 
         // Controller setup
-        controller = new LoginController(this);
+        if (navigator != null) {
+            controller = new LoginController(this, navigator);
+        } else {
+            controller = new LoginController(this);
+        }
         loginButton.setOnAction(e -> controller.loginAction());
 
         // Set up the scene and stage
@@ -76,6 +80,18 @@ public class LoginView extends Application {
         primaryStage.setScene(scene);
         primaryStage.setTitle("Login");
         primaryStage.show();
+    }
+
+    public void setNavigator(AppNavigator navigator) {
+        this.navigator = navigator;
+        if (controller != null) {
+            controller.setNavigator(navigator);
+        }
+    }
+
+    public void display(Stage primaryStage) {
+        this.primaryStage = primaryStage;
+        start(primaryStage);
     }
 
     // Getters for username, password, and selected role
@@ -106,7 +122,4 @@ public class LoginView extends Application {
         return loginButton;
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
 }

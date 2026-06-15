@@ -3,6 +3,8 @@ package View;
 import Controller.ManagerController;
 import Model.Item;
 import Model.Supplier;
+import Util.AppNavigator;
+import View.LoginView;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -18,6 +20,7 @@ import java.util.List;
 public class ManagerDashboardView {
     private Stage stage;
     private ManagerController controller;
+    private AppNavigator navigator;
 
     private TextField itemNameField, categoryField, supplierField, supplierContactField, purchasePriceField, sellingPriceField, stockField, searchField;
     private Button addItemButton, addStockButton, removeItemButton, updateItemButton, logoutButton, viewStatisticsButton;
@@ -107,6 +110,10 @@ public class ManagerDashboardView {
         setupSupplierTable();
     }
 
+    public void setNavigator(AppNavigator navigator) {
+        this.navigator = navigator;
+    }
+
     private VBox createMainLayout() {
         VBox layout = new VBox(15);
         layout.setPadding(new Insets(20));
@@ -153,9 +160,13 @@ public class ManagerDashboardView {
     }
 
     private void logout() {
-        stage.close();
-        Stage loginStage = new Stage();
-        new LoginView().start(loginStage);
+        if (navigator != null) {
+            navigator.logout();
+        } else {
+            stage.close();
+            Stage loginStage = new Stage();
+            new LoginView().start(loginStage);
+        }
     }
 
     private void showAddStockDialog() {

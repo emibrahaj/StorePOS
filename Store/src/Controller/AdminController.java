@@ -3,6 +3,7 @@ package Controller;
 import DAO.AppPaths;
 import DAO.PasswordManager;
 import Util.InputValidator;
+import Model.Employee;
 import Model.Role;
 import Model.User;
 
@@ -44,7 +45,7 @@ public class AdminController {
             throw new RuntimeException("Failed to hash password: " + e.getMessage(), e);
         }
 
-        employees.add(new EmployeeRecord(username, hashedPassword, name, email, phoneNumber, role, accessLevel));
+        employees.add(new Employee(username, hashedPassword, name, email, phoneNumber, role, accessLevel));
         saveEmployees();
     }
 
@@ -63,7 +64,11 @@ public class AdminController {
         }
 
         existing.setUsername(username);
-        existing.setPassword(password);
+        try {
+            existing.setPassword(PasswordManager.hashPassword(password));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to hash password: " + e.getMessage(), e);
+        }
         existing.setName(name);
         existing.setEmail(email);
         existing.setPhoneNumber(phoneNumber);
@@ -113,7 +118,7 @@ public class AdminController {
                 String[] fields = line.split(",");
                 if (fields.length >= 5) {
                     Role role = parseRole(fields[4]);
-                    employees.add(new EmployeeRecord(fields[0], fields[1], fields[0], fields[2],
+                    employees.add(new Employee(fields[0], fields[1], fields[0], fields[2],
                             fields[3], role, defaultAccessLevel(role)));
                 }
             }
@@ -147,9 +152,13 @@ public class AdminController {
     }
 
     private void addDefaultEmployees() {
-        employees.add(new EmployeeRecord("adminUser", "adminPass", "Admin", "klajdi@gmail.com", "0684801184", Role.ADMIN, "Full Access"));
-        employees.add(new EmployeeRecord("managerUser", "managerPass", "Manager", "manager@example.com", "4466778899", Role.MANAGER, "Inventory and reports"));
-        employees.add(new EmployeeRecord("cashierUser", "cashierPass", "Cashier", "cashier@example.com", "123456789", Role.CASHIER, "Sales"));
+        try {
+            employees.add(new Employee("adminUser", PasswordManager.hashPassword("adminPass"), "Admin", "klajdi@gmail.com", "0684801184", Role.ADMIN, "Full Access"));
+            employees.add(new Employee("managerUser", PasswordManager.hashPassword("managerPass"), "Manager", "manager@example.com", "4466778899", Role.MANAGER, "Inventory and reports"));
+            employees.add(new Employee("cashierUser", PasswordManager.hashPassword("cashierPass"), "Cashier", "cashier@example.com", "123456789", Role.CASHIER, "Sales"));
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not create default employees: " + e.getMessage(), e);
+        }
     }
 
     private void validateEmployee(String username, String password, String email, String phoneNumber, Role role) {
@@ -192,12 +201,4 @@ public class AdminController {
         }
     }
 
-    private static class EmployeeRecord extends User {
-        EmployeeRecord(String username, String password, String name, String email,
-                       String phoneNumber, Role role, String accessLevel) {
-            super(username, password, name, email, phoneNumber);
-            setRole(role);
-            setAccessLevel(accessLevel);
-        }
-    }
 }

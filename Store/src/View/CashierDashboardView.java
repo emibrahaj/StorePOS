@@ -3,6 +3,7 @@ package View;
 import Controller.CashierController;
 import Model.Item;
 import Model.Bill;
+import Util.AppNavigator;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.FXCollections;
@@ -12,13 +13,15 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.geometry.Insets;
+import java.util.Optional;
 
 public class CashierDashboardView {
     private Stage stage;
     private CashierController controller;
+    private AppNavigator navigator;
     private TextField searchField;
     private TextField quantityField;
-    private Button addItemButton, finalizeBillButton, refreshBillsButton;
+    private Button addItemButton, finalizeBillButton, refreshBillsButton, returnItemButton;
     private Label totalLabel;
     private TableView<Item> inventoryTable;
     private TableView<Bill> billTable;
@@ -49,6 +52,9 @@ public class CashierDashboardView {
         finalizeBillButton = createStyledButton("Finalize Bill");
         finalizeBillButton.setOnAction(e -> finalizeBill());
 
+        returnItemButton = createStyledButton("Process Return");
+        returnItemButton.setOnAction(e -> showReturnDialog());
+
         refreshBillsButton = createStyledButton("Refresh Today's Bills");
         refreshBillsButton.setOnAction(e -> loadTodaysBills());
 
@@ -70,6 +76,7 @@ public class CashierDashboardView {
             quantityField,
             addItemButton,
             finalizeBillButton,
+            returnItemButton,
             totalLabel,
             refreshBillsButton,
             billTable
@@ -81,6 +88,10 @@ public class CashierDashboardView {
         stage.setScene(scene);
         stage.setTitle("Cashier Dashboard");
         stage.show();
+    }
+
+    public void setNavigator(AppNavigator navigator) {
+        this.navigator = navigator;
     }
 
     private void setupInventoryTable() {
@@ -115,7 +126,15 @@ public class CashierDashboardView {
         TableColumn<Bill, Double> totalAmountCol = new TableColumn<>("Total Amount");
         totalAmountCol.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getTotalAmount()).asObject());
 
-        billTable.getColumns().addAll(billNumberCol, dateCol, totalAmountCol);
+        TableColumn<Bill, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(cellData -> {
+            Bill bill = cellData.getValue();
+            String status = bill.isFullyRefunded() ? "Refunded"
+                    : bill.getRefundedAmount() > 0 ? "Partial Return" : "Completed";
+            return new SimpleStringProperty(status);
+        });
+
+        billTable.getColumns().addAll(billNumberCol, dateCol, totalAmountCol, statusCol);
     }
 
     private void loadTodaysBills() {
@@ -165,6 +184,59 @@ public class CashierDashboardView {
         totalLabel.setText("Total: $0.00");
         loadInventoryData();  // Reload inventory to reflect stock update
         loadTodaysBills();  // Reload bills to show new finalized bill
+    }
+
+    private void showReturnDialog() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Process Return");
+        dialog.setHeaderText("Return item from a completed bill");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField billNumberField = new TextField();
+        billNumberField.setPromptText("Bill Number");
+        TextField returnItemNameField = new TextField();
+        returnItemNameField.setPromptText("Item Name");
+        TextField returnQuantityField = new TextField();
+        returnQuantityField.setPromptText("Quantity");
+
+        grid.add(new Label("Bill Number:"), 0, 0);
+        grid.add(billNumberField, 1, 0);
+        grid.add(new Label("Item Name:"), 0, 1);
+        grid.add(returnItemNameField, 1, 1);
+        grid.add(new Label("Quantity:"), 0, 2);
+        grid.add(returnQuantityField, 1, 2);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            try {
+                String billNumber = billNumberField.getText().trim();
+                String itemName = returnItemNameField.getText().trim();
+                int quantity = Integer.parseInt(returnQuantityField.getText().trim());
+
+                if (billNumber.isEmpty() || itemName.isEmpty() || quantity <= 0) {
+                    showAlert("Error", "Please provide valid return details.");
+                    return;
+                }
+
+                if (controller.returnItemFromBill(billNumber, itemName, quantity)) {
+                    showAlert("Success", "Return processed successfully.");
+                    loadInventoryData();
+                    loadTodaysBills();
+                    totalLabel.setText("Today's Total Sales: $" + controller.getTotalOfTodaysBills());
+                } else {
+                    showAlert("Error", "Unable to process return. Check the bill number, item name, and quantity.");
+                }
+            } catch (NumberFormatException e) {
+                showAlert("Error", "Quantity must be a valid number.");
+            }
+        }
     }
 
     private void showAlert(String title, String message) {

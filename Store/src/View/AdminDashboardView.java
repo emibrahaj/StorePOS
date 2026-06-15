@@ -3,6 +3,7 @@ package View;
 import Controller.AdminController;
 import Model.Role;
 import Model.User;
+import Util.AppNavigator;
 import javafx.geometry.Insets;
 import javafx.scene.*;
 import javafx.scene.control.*;
@@ -18,6 +19,7 @@ public class AdminDashboardView {
     private AdminController controller;
     private UserView userView;
     private VBox contentArea;
+    private AppNavigator navigator;
     private TextField usernameField;
     private PasswordField passwordField;
     private TextField nameField;
@@ -54,8 +56,12 @@ public class AdminDashboardView {
         viewReportsButton.setOnAction(e -> showReports());
         accessLevelButton.setOnAction(e -> showAccessLevels());
         logoutButton.setOnAction(e -> {
-            primaryStage.close();
-            new LoginView().start(new Stage());
+            if (navigator != null) {
+                navigator.logout();
+            } else {
+                primaryStage.close();
+                new LoginView().start(new Stage());
+            }
         });
 
         sidebar.getChildren().addAll(manageEmployeesButton, viewReportsButton, accessLevelButton, logoutButton);
@@ -237,6 +243,10 @@ public class AdminDashboardView {
         Label cashiers = new Label("Cashiers: " + controller.getEmployeeCountByRole(Role.CASHIER));
 
         contentArea.getChildren().addAll(title, total, admins, managers, cashiers);
+    }
+
+    public void setNavigator(AppNavigator navigator) {
+        this.navigator = navigator;
     }
 
     private void showAccessLevels() {

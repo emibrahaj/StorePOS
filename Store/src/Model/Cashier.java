@@ -74,6 +74,36 @@ import javafx.scene.control.Alert;
             }
         }
 
+        public boolean processReturn(String billNumber, String itemName, int quantity) {
+            Bill bill = findBillByNumber(billNumber);
+            if (bill == null || quantity <= 0) {
+                return false;
+            }
+
+            double refundAmount = bill.returnItem(itemName, quantity);
+            if (refundAmount <= 0) {
+                return false;
+            }
+
+            Item inventoryItem = inventory.findItemByName(itemName);
+            if (inventoryItem != null) {
+                inventoryItem.setStock(inventoryItem.getStock() + quantity);
+            }
+
+            saveBillsToFile();
+            saveInventoryToFile();
+            return true;
+        }
+
+        private Bill findBillByNumber(String billNumber) {
+            for (Bill bill : bills) {
+                if (bill.getBillNumber().equalsIgnoreCase(billNumber)) {
+                    return bill;
+                }
+            }
+            return null;
+        }
+
         private void saveBillToPrintableFile(Bill bill) {
             Path folderPath = AppPaths.printableBillsFolder();
             File directory = folderPath.toFile();
