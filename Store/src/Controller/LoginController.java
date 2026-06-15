@@ -4,6 +4,8 @@ import DAO.AppPaths;
 import DAO.PasswordManager;
 import Util.InputValidator;
 import Util.SharedContext;
+import Util.AppNavigator;
+import Util.Logger;
 import View.LoginView;
 import View.AdminDashboardView;
 import View.CashierDashboardView;
@@ -22,14 +24,24 @@ import Model.Inventory;
 
 public class LoginController {
     private LoginView view;
+    private AppNavigator navigator;
     private List<String[]> credentials;  // Store credentials in a list of arrays
     private boolean isLoggedIn;
 
     public LoginController(LoginView view) {
+        this(view, null);
+    }
+
+    public LoginController(LoginView view, AppNavigator navigator) {
         this.view = view;
+        this.navigator = navigator;
         this.credentials = new ArrayList<>();
         this.isLoggedIn = false;
         loadCredentials();
+    }
+
+    public void setNavigator(AppNavigator navigator) {
+        this.navigator = navigator;
     }
 
     // Load credentials from the passwords.txt file
@@ -115,26 +127,38 @@ public class LoginController {
             context.setCurrentUsername(loggedInUsername);
             context.setCurrentUserRole(loggedInRole);
             
+            Logger.info("LoginController", loggedInRole + " " + loggedInUsername + " logged in successfully");
             updateViewStatus(loggedInRole + " " + loggedInUsername + " logged in.");
 
-            // Open appropriate dashboard based on role
-            if (loggedInRole.equals("Admin")) {
-                openAdminDashboard();
-            } else if (loggedInRole.equals("Manager")) {
-                Manager manager = new Manager(loggedInUsername, password, email, phoneNumber, phoneNumber);
-                ManagerController managerController = new ManagerController(manager);
-                openManagerDashboard(managerController);
-            } else if (loggedInRole.equals("Cashier")) {
-                // Cashier uses shared inventory from context
-                Inventory sharedInventory = context.getInventory();
-                Manager manager = new Manager("system", "internal", "System Manager", "system@store.local", "0000000000");
-                Cashier cashier = new Cashier(loggedInUsername, password, email, phoneNumber, "Electronics", sharedInventory);
-                CashierController cashierController = new CashierController(cashier, sharedInventory);
-                openCashierDashboard(cashierController);
+            // Use navigator for screen transitions (delegate to AppNavigator)
+            if (navigator != null) {
+                if (loggedInRole.equals("Admin")) {
+                    navigator.navigateToAdminDashboard();
+                } else if (loggedInRole.equals("Manager")) {
+                    navigator.navigateToManagerDashboard(loggedInUsername, password, email, phoneNumber);
+                } else if (loggedInRole.equals("Cashier")) {
+                    navigator.navigateToCashierDashboard(loggedInUsername, password, email, phoneNumber);
+                }
+            } else {
+                // Fallback if navigator not set (for backward compatibility)
+                if (loggedInRole.equals("Admin")) {
+                    openAdminDashboard();
+                } else if (loggedInRole.equals("Manager")) {
+                    Manager manager = new Manager(loggedInUsername, password, email, phoneNumber, phoneNumber);
+                    ManagerController managerController = new ManagerController(manager);
+                    openManagerDashboard(managerController);
+                } else if (loggedInRole.equals("Cashier")) {
+                    Inventory sharedInventory = context.getInventory();
+                    Manager manager = new Manager("system", "internal", "System Manager", "system@store.local", "0000000000");
+                    Cashier cashier = new Cashier(loggedInUsername, password, email, phoneNumber, "Electronics", sharedInventory);
+                    CashierController cashierController = new CashierController(cashier, sharedInventory);
+                    openCashierDashboard(cashierController);
+                }
             }
 
 
         } else {
+            Logger.warn("LoginController", "Login failed for user: " + username);
             showAlert("Login Failed", "Invalid username, password, or other credentials.");
         }
     }
